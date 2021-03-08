@@ -14,6 +14,7 @@ make install
 ## System
 
 ``` bash
+make
 sudo make install PREFIX=/usr
 ```
 

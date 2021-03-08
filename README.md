@@ -1,6 +1,6 @@
 # Nautilus extension: nautilus extra columns
 
-Expand columns with extra data like: tags, metadata, exif or quality information.
+Expand columns with extra data like: tags, metadata, exif, quality information.
 
 # Instalation
 
@@ -8,7 +8,7 @@ Instalation can be selective, for eg: `make install-mediainfo` => `src/nec-media
 
 ## Dependiences
 * mediainfo: [pymediainfo](https://github.com/sbraz/pymediainfo/)
-* exif: [exiv2](https://launchpad.net/py3exiv2)
+* exif: [pyexiv2](https://launchpad.net/py3exiv2)
 * pdf: [PyPDF2](https://mstamy2.github.com/PyPDF2)
 
 ## To local destination (home directory)

@@ -73,6 +73,25 @@ class NecExif(GObject.GObject,
             for col in self.columns_setup
         ]
 
+    def update_file_info_full(self, provider, handle, closure, file_info):
+        for col in self.columns_setup:
+            file_info.add_string_attribute(col['attribute'], '')
+
+        if file_info.get_uri_scheme() == 'file' and \
+           file_info.get_mime_type() in self.mime_do:
+            filename = uri_unescape(file_info.get_uri()[7:])
+
+            GObject.idle_add(
+                self.do_pyexiv2,
+                provider,
+                handle,
+                closure,
+                file_info,
+                filename, )
+            return Nautilus.OperationResult.IN_PROGRESS
+
+        return Nautilus.OperationResult.COMPLETE
+
     def do_pyexiv2(self, provider, handle, closure, file_info, filename):
         try:
             metadata = from_exiv(filename)
@@ -122,22 +141,3 @@ class NecExif(GObject.GObject,
             closure, provider, handle, Nautilus.OperationResult.COMPLETE, )
 
         return False
-
-    def update_file_info_full(self, provider, handle, closure, file_info):
-        for col in self.columns_setup:
-            file_info.add_string_attribute(col['attribute'], '')
-
-        if file_info.get_uri_scheme() == 'file' and \
-           file_info.get_mime_type() in self.mime_do:
-            filename = uri_unescape(file_info.get_uri()[7:])
-
-            GObject.idle_add(
-                self.do_pyexiv2,
-                provider,
-                handle,
-                closure,
-                file_info,
-                filename, )
-            return Nautilus.OperationResult.IN_PROGRESS
-
-        return Nautilus.OperationResult.COMPLETE

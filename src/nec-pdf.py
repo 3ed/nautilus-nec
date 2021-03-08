@@ -95,26 +95,27 @@ class NecPdf(GObject.GObject,
         try:
             f = open(filename, "rb")
             i = from_pdf(f).getDocumentInfo()
+
+            if hasattr(i, 'author') and i.author is not None:
+                file_info.add_string_attribute('pdf_artist', i.author)
+
+            if hasattr(i, 'title') and i.title is not None:
+                file_info.add_string_attribute('pdf_title', i.title)
+
+            if hasattr(i, 'creator') and i.creator is not None:
+                file_info.add_string_attribute('pdf_creator')
+
+            if hasattr(i, 'producer') and i.producer is not None:
+                file_info.add_string_attribute('pdf_producer')
+
+            if hasattr(i, 'subject') and i.subject is not None:
+                file_info.add_string_attribute('pdf_subject')
+
         except Exception:
             self.throw_bailout(name="PyPDF2", filename=filename)
-            return
+
         finally:
             f.close()
-
-        if hasattr(i, 'author') and i.author is not None:
-            file_info.add_string_attribute('pdf_artist', i.author)
-
-        if hasattr(i, 'title') and i.title is not None:
-            file_info.add_string_attribute('pdf_title', i.title)
-
-        if hasattr(i, 'creator') and i.creator is not None:
-            file_info.add_string_attribute('pdf_creator')
-
-        if hasattr(i, 'producer') and i.producer is not None:
-            file_info.add_string_attribute('pdf_producer')
-
-        if hasattr(i, 'subject') and i.subject is not None:
-            file_info.add_string_attribute('pdf_subject')
 
         file_info.invalidate_extension_info()
 

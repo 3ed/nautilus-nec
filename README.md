@@ -6,8 +6,7 @@ Expand columns with extra data like: tags, metadata, exif or quality information
 
 Instalation can be selective, for eg: `make install-mediainfo` => `src/nec-mediainfo.py`
 
-## Local
-
+## Local (home directory)
 ``` bash
 make install
 ```

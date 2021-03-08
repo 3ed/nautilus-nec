@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import gi
 from gi.repository import Nautilus, GObject
-from urllib.parse import unquote as uri_unescape
 from PyPDF2 import PdfFileReader as from_pdf
 
 gi.require_version('Nautilus', '3.0')
@@ -10,8 +9,6 @@ gi.require_version('Nautilus', '3.0')
 class NecPdf(GObject.GObject,
              Nautilus.ColumnProvider,
              Nautilus.InfoProvider, ):
-
-    debug_mode = False
 
     mime_do = [
         'application/pdf'
@@ -52,13 +49,6 @@ class NecPdf(GObject.GObject,
 
     def __init__(self):
         print("* Starting nec-pdf.py")
-        pass
-
-    def throw_bailout(self, name, filename):
-        if self.debug_mode:
-            raise Exception("{}: {} bailout here".format(filename, name))
-        else:
-            print("{}: {} bailout here (skipping)".format(filename, name))
 
     def get_columns(self):
         return [
@@ -74,9 +64,8 @@ class NecPdf(GObject.GObject,
         for col in self.columns_setup:
             file_info.add_string_attribute(col['attribute'], '')
 
-        if file_info.get_uri_scheme() == 'file' \
-           and file_info.get_mime_type() in self.mime_do:
-            filename = uri_unescape(file_info.get_uri()[7:])
+        if file_info.get_uri_scheme() == 'file' and \
+           file_info.get_mime_type() in self.mime_do:
 
             GObject.idle_add(
                 self.do_pypdf,
@@ -84,14 +73,15 @@ class NecPdf(GObject.GObject,
                 handle,
                 closure,
                 file_info,
-                filename,
                 )
 
             return Nautilus.OperationResult.IN_PROGRESS
 
         return Nautilus.OperationResult.COMPLETE
 
-    def do_pypdf(self, provider, handle, closure, file_info, filename):
+    def do_pypdf(self, provider, handle, closure, file_info):
+        filename = file_info.get_location().get_path()
+
         try:
             f = open(filename, "rb")
             i = from_pdf(f).getDocumentInfo()
@@ -112,7 +102,7 @@ class NecPdf(GObject.GObject,
                 file_info.add_string_attribute('pdf_subject')
 
         except Exception:
-            self.throw_bailout(name="PyPDF2", filename=filename)
+            print("{}: nec-pdf bailout here (skipping)".format(filename))
 
         finally:
             f.close()

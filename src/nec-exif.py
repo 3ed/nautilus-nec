@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import gi
 from gi.repository import Nautilus, GObject
-from urllib.parse import unquote as uri_unescape
 from pyexiv2 import ImageMetadata as from_exiv
 
 gi.require_version('Nautilus', '3.0')
@@ -52,7 +51,6 @@ class NecExif(GObject.GObject,
 
     def __init__(self):
         print("* Starting nec-exif.py")
-        pass
 
     def get_columns(self):
         return [
@@ -70,7 +68,6 @@ class NecExif(GObject.GObject,
 
         if file_info.get_uri_scheme() == 'file' and \
            file_info.get_mime_type() in self.mime_do:
-            filename = uri_unescape(file_info.get_uri()[7:])
 
             GObject.idle_add(
                 self.do_pyexiv2,
@@ -78,14 +75,15 @@ class NecExif(GObject.GObject,
                 handle,
                 closure,
                 file_info,
-                filename,
                 )
 
             return Nautilus.OperationResult.IN_PROGRESS
 
         return Nautilus.OperationResult.COMPLETE
 
-    def do_pyexiv2(self, provider, handle, closure, file_info, filename):
+    def do_pyexiv2(self, provider, handle, closure, file_info):
+        filename = file_info.get_location().get_path()
+
         try:
             metadata = from_exiv(filename)
             metadata.read()

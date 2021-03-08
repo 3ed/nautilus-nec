@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import gi
 from gi.repository import Nautilus, GObject
-from urllib.parse import unquote as uri_unescape
 from pymediainfo import MediaInfo
 
 gi.require_version('Nautilus', '3.0')
@@ -124,7 +123,6 @@ class NecMediainfo(GObject.GObject,
 
     def __init__(self):
         print("* Starting nec-mediainfo.py")
-        pass
 
     def get_columns(self):
         return [
@@ -140,9 +138,8 @@ class NecMediainfo(GObject.GObject,
         for col in self.columns_setup:
             file_info.add_string_attribute(col['attribute'], '')
 
-        if file_info.get_uri_scheme() == 'file' \
-           and file_info.get_mime_type() in self.mime_do:
-            filename = uri_unescape(file_info.get_uri()[7:])
+        if file_info.get_uri_scheme() == 'file' and \
+           file_info.get_mime_type() in self.mime_do:
 
             GObject.idle_add(
                 self.do_mediainfo,
@@ -150,14 +147,15 @@ class NecMediainfo(GObject.GObject,
                 handle,
                 closure,
                 file_info,
-                filename,
                 )
 
             return Nautilus.OperationResult.IN_PROGRESS
 
         return Nautilus.OperationResult.COMPLETE
 
-    def do_mediainfo(self, provider, handle, closure, file_info, filename):
+    def do_mediainfo(self, provider, handle, closure, file_info):
+        filename = file_info.get_location().get_path()
+
         try:
             mi = MediaInfo.parse(filename)
 
@@ -176,7 +174,6 @@ class NecMediainfo(GObject.GObject,
 
         except Exception:
             print("{}: nec-mediainfo bailout here (skipping)".format(filename))
-            # return
 
         file_info.invalidate_extension_info()
 

@@ -51,7 +51,7 @@ class NecPdf(GObject.GObject,
     ]
 
     def __init__(self):
-        print("* Starting nec-pdf")
+        print("* Starting nec-pdf.py")
         pass
 
     def throw_bailout(self, name, filename):

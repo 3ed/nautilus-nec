@@ -11,8 +11,6 @@ class NecExif(GObject.GObject,
               Nautilus.ColumnProvider,
               Nautilus.InfoProvider, ):
 
-    debug_mode = False
-
     mime_do = [
         'image/jpeg', 'image/png', 'image/pgf', 'image/gif', 'image/bmp',
         'image/webp', 'image/targa', 'image/tiff', 'image/x-ms-bmp',
@@ -53,14 +51,8 @@ class NecExif(GObject.GObject,
     ]
 
     def __init__(self):
-        print("* Starting nec-exif")
+        print("* Starting nec-exif.py")
         pass
-
-    def throw_bailout(self, name, filename):
-        if self.debug_mode:
-            raise Exception("{}: {} bailout here".format(filename, name))
-        else:
-            print("{}: {} bailout here (skipping)".format(filename, name))
 
     def get_columns(self):
         return [
@@ -70,8 +62,7 @@ class NecExif(GObject.GObject,
                 label=col['label'],
                 description=col['description']
             )
-            for col in self.columns_setup
-        ]
+            for col in self.columns_setup]
 
     def update_file_info_full(self, provider, handle, closure, file_info):
         for col in self.columns_setup:
@@ -87,7 +78,9 @@ class NecExif(GObject.GObject,
                 handle,
                 closure,
                 file_info,
-                filename, )
+                filename,
+                )
+
             return Nautilus.OperationResult.IN_PROGRESS
 
         return Nautilus.OperationResult.COMPLETE
@@ -96,44 +89,36 @@ class NecExif(GObject.GObject,
         try:
             metadata = from_exiv(filename)
             metadata.read()
-        except Exception:
-            file_info.invalidate_extension_info()
 
-            Nautilus.info_provider_update_complete_invoke(
-                closure, provider, handle, Nautilus.OperationResult.FAILED, )
+            try:
+                v = metadata['Exif.Photo.DateTimeOriginal'].raw_value
+                file_info.add_string_attribute('exif_datetime_original', v)
+            except Exception:
+                pass
 
-            self.throw_bailout(name="pyexiv2", filename=filename)
-            return False
+            try:
+                v = metadata['Exif.Image.Software'].raw_value
+                file_info.add_string_attribute('exif_software', v)
+            except Exception:
+                pass
 
-        try:
-            file_info.add_string_attribute(
-                'exif_datetime_original',
-                str(metadata['Exif.Photo.DateTimeOriginal'].raw_value), )
-        except Exception:
-            pass
+            try:
+                v = metadata['Exif.Photo.Flash'].raw_value
+                file_info.add_string_attribute('exif_flash', v)
+            except Exception:
+                pass
 
-        try:
-            file_info.add_string_attribute(
-                'exif_software',
-                str(metadata['Exif.Image.Software'].raw_value), )
-        except Exception:
-            pass
-
-        try:
-            file_info.add_string_attribute(
-                'exif_flash',
-                str(metadata['Exif.Photo.Flash'].raw_value), )
-        except Exception:
-            pass
-
-        try:
-            file_info.add_string_attribute(
-                'exif_pixeldimensions',
-                "{}x{}".format(
+            try:
+                v = "{}x{}".format(
                     metadata['Exif.Photo.PixelXDimension'].raw_value,
-                    metadata['Exif.Photo.PixelYDimension'].raw_value, ))
+                    metadata['Exif.Photo.PixelYDimension'].raw_value,
+                    )
+                file_info.add_string_attribute('exif_pixeldimensions', v)
+            except Exception:
+                pass
+
         except Exception:
-            pass
+            print("{}: nec-exif bailout here (skipping)".format(filename))
 
         file_info.invalidate_extension_info()
 

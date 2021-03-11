@@ -10,6 +10,8 @@ class NecPdf(GObject.GObject,
              Nautilus.ColumnProvider,
              Nautilus.InfoProvider, ):
 
+    nec_name = 'nec-pdf.py'
+
     mime_do = [
         'application/pdf'
     ]
@@ -48,7 +50,7 @@ class NecPdf(GObject.GObject,
     ]
 
     def __init__(self):
-        print("* Starting nec-pdf.py")
+        print("* Starting {}".format(self.nec_name))
 
     def get_columns(self):
         return [
@@ -83,29 +85,16 @@ class NecPdf(GObject.GObject,
         filename = file_info.get_location().get_path()
 
         try:
-            f = open(filename, "rb")
-            i = from_pdf(f).getDocumentInfo()
+            MapPyPDF2(filename).to(
+                lambda k, v: file_info.add_string_attribute(k, v)
+                )
 
-            if hasattr(i, 'author') and i.author is not None:
-                file_info.add_string_attribute('pdf_artist', i.author)
-
-            if hasattr(i, 'title') and i.title is not None:
-                file_info.add_string_attribute('pdf_title', i.title)
-
-            if hasattr(i, 'creator') and i.creator is not None:
-                file_info.add_string_attribute('pdf_creator')
-
-            if hasattr(i, 'producer') and i.producer is not None:
-                file_info.add_string_attribute('pdf_producer')
-
-            if hasattr(i, 'subject') and i.subject is not None:
-                file_info.add_string_attribute('pdf_subject')
-
-        except Exception:
-            print("{}: nec-pdf bailout here (skipping)".format(filename))
-
-        finally:
-            f.close()
+        except Exception as error:
+            print("--- ERROR in {} ---\nfile: {}\nmsg:  {}\n---".format(
+                self.nec_name,
+                filename,
+                str(error),
+                ))
 
         file_info.invalidate_extension_info()
 
@@ -113,3 +102,31 @@ class NecPdf(GObject.GObject,
             closure, provider, handle, Nautilus.OperationResult.COMPLETE, )
 
         return False
+
+
+class MapPyPDF2:
+    def __init__(self, filename):
+        with open(filename, "rb") as f:
+            i = from_pdf(f).getDocumentInfo()
+
+            self.map(i)
+
+    def to(self, fun) -> None:
+        for (k, v) in self.__dict__.items():
+            fun(k, v)
+
+    def map(self, i) -> None:
+        if hasattr(i, 'author') and i.author is not None:
+            self.pdf_artist = i.author
+
+        if hasattr(i, 'title') and i.title is not None:
+            self.pdf_title = i.title
+
+        if hasattr(i, 'creator') and i.creator is not None:
+            self.pdf_creator = i.creator
+
+        if hasattr(i, 'producer') and i.producer is not None:
+            self.pdf_producer = i.producer
+
+        if hasattr(i, 'subject') and i.subject is not None:
+            self.pdf_subject = i.subject

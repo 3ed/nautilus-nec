@@ -10,6 +10,8 @@ class NecExif(GObject.GObject,
               Nautilus.ColumnProvider,
               Nautilus.InfoProvider, ):
 
+    nec_name = 'nec-exif.py'
+
     mime_do = [
         'image/jpeg', 'image/png', 'image/pgf', 'image/gif', 'image/bmp',
         'image/webp', 'image/targa', 'image/tiff', 'image/x-ms-bmp',
@@ -50,7 +52,7 @@ class NecExif(GObject.GObject,
     ]
 
     def __init__(self):
-        print("* Starting nec-exif.py")
+        print("* Starting {}".format(self.nec_name))
 
     def get_columns(self):
         return [
@@ -70,7 +72,7 @@ class NecExif(GObject.GObject,
            file_info.get_mime_type() in self.mime_do:
 
             GObject.idle_add(
-                self.do_pyexiv2,
+                self.do_event,
                 provider,
                 handle,
                 closure,
@@ -81,46 +83,57 @@ class NecExif(GObject.GObject,
 
         return Nautilus.OperationResult.COMPLETE
 
-    def do_pyexiv2(self, provider, handle, closure, file_info):
+    def do_event(self, provider, handle, closure, file_info) -> bool:
         filename = file_info.get_location().get_path()
 
         try:
-            metadata = from_exiv(filename)
-            metadata.read()
+            MapPyExiv2(filename).to(
+                lambda k, v: file_info.add_string_attribute(k, v)
+                )
 
-            try:
-                v = metadata['Exif.Photo.DateTimeOriginal'].raw_value
-                file_info.add_string_attribute('exif_datetime_original', v)
-            except Exception:
-                pass
-
-            try:
-                v = metadata['Exif.Image.Software'].raw_value
-                file_info.add_string_attribute('exif_software', v)
-            except Exception:
-                pass
-
-            try:
-                v = metadata['Exif.Photo.Flash'].raw_value
-                file_info.add_string_attribute('exif_flash', v)
-            except Exception:
-                pass
-
-            try:
-                v = "{}x{}".format(
-                    metadata['Exif.Photo.PixelXDimension'].raw_value,
-                    metadata['Exif.Photo.PixelYDimension'].raw_value,
-                    )
-                file_info.add_string_attribute('exif_pixeldimensions', v)
-            except Exception:
-                pass
-
-        except Exception:
-            print("{}: nec-exif bailout here (skipping)".format(filename))
+        except Exception as error:
+            print("--- ERROR in {} ---\nfile: {}\nmsg:  {}\n---".format(
+                self.nec_name,
+                filename,
+                str(error),
+                ))
 
         file_info.invalidate_extension_info()
 
         Nautilus.info_provider_update_complete_invoke(
-            closure, provider, handle, Nautilus.OperationResult.COMPLETE, )
+            closure,
+            provider,
+            handle,
+            Nautilus.OperationResult.COMPLETE,
+            )
 
         return False
+
+
+class MapPyExiv2:
+    def __init__(self, filename) -> None:
+        metadata = from_exiv(filename)
+        metadata.read()
+
+        self.map(metadata)
+
+    def to(self, fun) -> None:
+        for (k, v) in self.__dict__.items():
+            fun(k, v)
+
+    def map(self, i) -> None:
+        if v := i.get('Exif.Photo.DateTimeOriginal'):
+            self.exif_datetime_original = v.raw_value
+
+        if v := i.get('Exif.Image.Software'):
+            self.exif_software = v.raw_value
+
+        if v := i.get('Exif.Photo.Flash'):
+            self.exif_flash = v.raw_value
+
+        if x := i.get('Exif.Photo.PixelXDimension'):
+            if y := i.get('Exif.Photo.PixelYDimension'):
+                self.exif_pixeldimensions = "{}x{}".format(
+                    x.raw_value,
+                    y.raw_value,
+                    )

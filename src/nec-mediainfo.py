@@ -10,6 +10,8 @@ class NecMediainfo(GObject.GObject,
                    Nautilus.ColumnProvider,
                    Nautilus.InfoProvider, ):
 
+    nec_name = 'nec-mediainfo.py'
+
     mime_do = [
         'audio/x-wav',
 
@@ -122,7 +124,7 @@ class NecMediainfo(GObject.GObject,
     ]
 
     def __init__(self):
-        print("* Starting nec-mediainfo.py")
+        print("* Starting {}".format(self.nec_name))
 
     def get_columns(self):
         return [
@@ -142,7 +144,7 @@ class NecMediainfo(GObject.GObject,
            file_info.get_mime_type() in self.mime_do:
 
             GObject.idle_add(
-                self.do_mediainfo,
+                self.do_event,
                 provider,
                 handle,
                 closure,
@@ -153,90 +155,87 @@ class NecMediainfo(GObject.GObject,
 
         return Nautilus.OperationResult.COMPLETE
 
-    def do_mediainfo(self, provider, handle, closure, file_info):
+    def do_event(self, provider, handle, closure, file_info) -> bool:
         filename = file_info.get_location().get_path()
 
         try:
-            mi = MediaInfo.parse(filename)
+            MapMediaInfo(filename).to(
+                lambda k, v: file_info.add_string_attribute(k, v)
+                )
 
-            for i in mi.tracks:
-                if 'General' == i.track_type:
-                    self.do_map_mediainfo_general(file_info, i)
-
-                elif 'Audio' == i.track_type:
-                    self.do_map_mediainfo_audio(file_info, i)
-
-                elif 'Image' == i.track_type:
-                    self.do_map_mediainfo_image(file_info, i)
-
-                elif 'Video' == i.track_type:
-                    self.do_map_mediainfo_video(file_info, i)
-
-        except Exception:
-            print("{}: nec-mediainfo bailout here (skipping)".format(filename))
+        except Exception as error:
+            print("--- ERROR in {} ---\nfile: {}\nmsg:  {}\n---".format(
+                self.nec_name,
+                filename,
+                str(error)
+                ))
 
         file_info.invalidate_extension_info()
 
         Nautilus.info_provider_update_complete_invoke(
-            closure, provider, handle, Nautilus.OperationResult.COMPLETE,
+            closure,
+            provider,
+            handle,
+            Nautilus.OperationResult.COMPLETE,
             )
 
         return False
 
-    def do_map_mediainfo_general(self, file_info, i):
+
+class MapMediaInfo:
+    def __init__(self, file):
+        mediainfo = MediaInfo.parse(file)
+
+        for i in mediainfo.tracks:
+            n = "map{}".format(i.track_type)
+            if method := getattr(self, n, None):
+                method(i)
+
+    def to(self, fun) -> None:
+        for (k, v) in self.__dict__.items():
+            fun(k, v)
+
+    def mapGeneral(self, i) -> None:
         if i.other_duration is not None:
-            v = str(i.other_duration[4])
-            file_info.add_string_attribute('length', v)
+            self.length = str(i.other_duration[4])
 
         if i.title is not None:
-            v = i.title
-            file_info.add_string_attribute('title', v)
+            self.title = i.title
 
         if i.album is not None:
-            v = i.album
-            file_info.add_string_attribute('album', v)
+            self.album = i.album
 
         if i.album_performer is not None:
-            v = i.album_performer
-            file_info.add_string_attribute('artist', v)
+            self.artist = i.album_performer
 
         if i.performer is not None:
-            v = i.performer
-            file_info.add_string_attribute('artist', v)
+            self.artist = i.performer
 
         if i.track_name_position is not None:
-            v = i.track_name_position
-            file_info.add_string_attribute('tracknumber', v)
+            self.tracknumber = i.track_name_position
 
         if i.other_overall_bit_rate is not None:
-            v = str(i.other_overall_bit_rate[0])
-            file_info.add_string_attribute('bitrate', v)
+            self.bitrate = str(i.other_overall_bit_rate[0])
 
         if i.format is not None:
-            v = i.format
-            file_info.add_string_attribute('format', v)
+            self.format = i.format
 
         if i.genre is not None:
-            v = i.genre
-            file_info.add_string_attribute('genre', v)
+            self.genre = i.genre
 
-    def do_map_mediainfo_audio(self, file_info, i):
+    def mapAudio(self, i) -> None:
         if i.other_sampling_rate is not None:
-            v = str(i.other_sampling_rate[0])
-            file_info.add_string_attribute('samplerate', v)
+            self.samplerate = str(i.other_sampling_rate[0])
 
         # file.add_string_attribute('date',info.userdate)
 
-    def do_map_mediainfo_image(self, file_info, i):
+    def mapImage(self, i) -> None:
         if i.height is not None and i.width is not None:
-            v = "{}x{}".format(i.width, i.height)
-            file_info.add_string_attribute('pixeldimensions', v)
+            self.pixeldimensions = "{}x{}".format(i.width, i.height)
 
-    def do_map_mediainfo_video(self, file_info, i):
+    def mapVideo(self, i) -> None:
         if i.height is not None and i.width is not None:
-            v = "{}x{}".format(i.width, i.height)
-            file_info.add_string_attribute('pixeldimensions', v)
+            self.pixeldimensions = "{}x{}".format(i.width, i.height)
 
         if i.frame_rate is not None:
-            v = str(i.frame_rate)
-            file_info.add_string_attribute('framerate', v)
+            self.framerate = str(i.frame_rate)

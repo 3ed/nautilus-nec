@@ -196,46 +196,47 @@ class MapMediaInfo:
             fun(k, v)
 
     def mapGeneral(self, i) -> None:
-        if i.other_duration is not None:
-            self.length = str(i.other_duration[4])
+        if v := getattr(i, 'other_duration', None):
+            self.length = str(v[4])
 
-        if i.title is not None:
-            self.title = i.title
+        if v := getattr(i, 'title', None):
+            self.title = getattr(i, 'title', '')
 
-        if i.album is not None:
-            self.album = i.album
+        if v := getattr(i, 'album', None):
+            self.album = v
 
-        if i.album_performer is not None:
-            self.artist = i.album_performer
+        if v := getattr(i, 'performer', None):
+            self.artist = v
+        elif v := getattr(i, 'album_performer', None):
+            self.artist = v
 
-        if i.performer is not None:
-            self.artist = i.performer
+        if v := getattr(i, 'track_name_position', None):
+            self.tracknumber = v
 
-        if i.track_name_position is not None:
-            self.tracknumber = i.track_name_position
+        if v := getattr(i, 'other_overall_bit_rate', None):
+            self.bitrate = str(v[0])
 
-        if i.other_overall_bit_rate is not None:
-            self.bitrate = str(i.other_overall_bit_rate[0])
+        if v := getattr(i, 'format', None):
+            self.format = v
 
-        if i.format is not None:
-            self.format = i.format
-
-        if i.genre is not None:
-            self.genre = i.genre
+        if v := getattr(i, 'genre', None):
+            self.genre = v
 
     def mapAudio(self, i) -> None:
-        if i.other_sampling_rate is not None:
-            self.samplerate = str(i.other_sampling_rate[0])
+        if v := getattr(i, 'other_sampling_rate', None):
+            self.samplerate = str(v[0])
 
         # file.add_string_attribute('date',info.userdate)
 
     def mapImage(self, i) -> None:
-        if i.height is not None and i.width is not None:
-            self.pixeldimensions = "{}x{}".format(i.width, i.height)
+        if (w := getattr(i, 'height', None)) and \
+           (h := getattr(i, 'width', None)):
+            self.pixeldimensions = "{}x{}".format(w, h)
 
     def mapVideo(self, i) -> None:
-        if i.height is not None and i.width is not None:
-            self.pixeldimensions = "{}x{}".format(i.width, i.height)
+        if (h := getattr(i, 'height', None)) and \
+           (w := getattr(i, 'width', None)):
+            self.pixeldimensions = "{}x{}".format(w, h)
 
-        if i.frame_rate is not None:
-            self.framerate = str(i.frame_rate)
+        if v := getattr(i, 'frame_rate', None):
+            self.framerate = str(v)

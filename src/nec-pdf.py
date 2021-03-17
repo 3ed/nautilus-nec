@@ -109,24 +109,24 @@ class MapPyPDF2:
         with open(filename, "rb") as f:
             i = from_pdf(f).getDocumentInfo()
 
-            self.map(i)
+        self.map(i)
 
     def to(self, fun) -> None:
         for (k, v) in self.__dict__.items():
             fun(k, v)
 
     def map(self, i) -> None:
-        if hasattr(i, 'author') and i.author is not None:
-            self.pdf_artist = i.author
+        if v := getattr(i, 'author', None):
+            self.pdf_artist = v
 
-        if hasattr(i, 'title') and i.title is not None:
-            self.pdf_title = i.title
+        if v := getattr(i, 'title', None):
+            self.pdf_title = v
 
-        if hasattr(i, 'creator') and i.creator is not None:
-            self.pdf_creator = i.creator
+        if v := getattr(i, 'creator', None):
+            self.pdf_creator = v
 
-        if hasattr(i, 'producer') and i.producer is not None:
-            self.pdf_producer = i.producer
+        if v := getattr(i, 'producer', None):
+            self.pdf_producer = v
 
-        if hasattr(i, 'subject') and i.subject is not None:
-            self.pdf_subject = i.subject
+        if v := getattr(i, 'subject', None):
+            self.pdf_subject = v

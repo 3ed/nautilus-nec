@@ -7,6 +7,7 @@ try:
     gi.require_version('Nautilus', '3.0')
 except ValueError:
     gi.require_version('Nautilus', '4.0')
+    from urllib.parse import unquote
 
 class NecPdf(GObject.GObject,
              Nautilus.ColumnProvider,
@@ -84,7 +85,9 @@ class NecPdf(GObject.GObject,
         return Nautilus.OperationResult.COMPLETE
 
     def do_pypdf(self, provider, handle, closure, file_info):
-        filename = file_info.get_location().get_path()
+        filename = file_info.get_location().get_path() \
+            if gi.get_required_version('Nautilus') == '3.0' \
+            else unquote(file_info.get_uri()[7:])
 
         try:
             MapPyPDF2(filename).to(

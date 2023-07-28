@@ -3,8 +3,10 @@ import gi
 from gi.repository import Nautilus, GObject
 from PyPDF2 import PdfFileReader as from_pdf
 
-gi.require_version('Nautilus', '3.0')
-
+try:
+    gi.require_version('Nautilus', '3.0')
+except ValueError:
+    gi.require_version('Nautilus', '4.0')
 
 class NecPdf(GObject.GObject,
              Nautilus.ColumnProvider,

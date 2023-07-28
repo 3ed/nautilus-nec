@@ -3,7 +3,10 @@ import gi
 from gi.repository import Nautilus, GObject
 from pyexiv2 import ImageMetadata as from_exiv
 
-gi.require_version('Nautilus', '3.0')
+try:
+    gi.require_version('Nautilus', '3.0')
+except ValueError:
+    gi.require_version('Nautilus', '4.0')
 
 
 class NecExif(GObject.GObject,
